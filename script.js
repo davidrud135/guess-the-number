@@ -1,42 +1,86 @@
-const randomNumber = getRandomIntInclusive();
-const alertBlock = getElem('alertBlock');
-const attemptsHeader = getElem('attemptsHeader');
-const tryAgainBtn = getElem('tryAgainBtn');
-let attemptsAmount = 5;
+$(document).ready(function() {
+  const randomNumber = getRandomIntInclusive();
+  const $attemptsHeader = $(`h6`);
+  const $form = $('form');
+  const $input = $('form input');
+  let attemptsAmount = 5;
+  let userAttemptsArr = [];
 
-hide(alertBlock);
-hide(tryAgainBtn);
+  $form.submit(guess);
 
-function getElem(id) {
-  return document.getElementById(id);
-}
+  function guess(event) {
+    event.preventDefault();
 
-function guess(event) {
-  const [inputElem] = event.target;
-  const inputValue = inputElem.value;
-  if (!inputValue) return;
-  const userNumber = +inputValue;
-  attemptsAmount -= 1;
-  attemptsHeader.innerText = `Attempts: ${attemptsAmount}`;
+    const inputValue = $input.val();
+    if (!inputValue) return;
+    const inputNumber = +inputValue;
+    userAttemptsArr.push(inputNumber);
+    $attemptsHeader.text(
+      `Attempts: ${attemptsAmount - userAttemptsArr.length}`
+    );
 
-  if (userNumber === randomNumber) {
-    showAlert('correct');
-    display(tryAgainBtn);
-    hide(event.target);
-    return;
-  } else if (userNumber > randomNumber) {
-    showAlert('wrong', 'Your number is higher than random number.');
-  } else {
-    showAlert('wrong', 'Your number is lower than random number.');
+    if (inputNumber === randomNumber) {
+      createAlert('win', getGameResultString(userAttemptsArr, randomNumber));
+      $form.remove();
+      return;
+    } else if (inputNumber > randomNumber) {
+      createAlert(
+        'wrong',
+        `Your number '${inputNumber}' is higher than random number.`
+      );
+    } else {
+      createAlert(
+        'wrong',
+        `Your number '${inputNumber}' is lower than random number.`
+      );
+    }
+
+    if (userAttemptsArr.length === attemptsAmount) {
+      createAlert('loss', getGameResultString(userAttemptsArr, randomNumber));
+      $form.remove();
+      return;
+    }
+
+    $input.val('');
   }
 
-  if (!attemptsAmount) {
-    showAlert('lost', `The random number was ${randomNumber}.`);
-    display(tryAgainBtn);
-    hide(event.target);
+  function createAlert(type, additionalText = '') {
+    $('div.alert').remove();
+    const $alertBlock = $(`<div class="alert" role="alert"></div>`);
+    const $alertHeader = $(`<h4 class="alert-heading py-3"></h4>`);
+    const $tryAgainBtn = $(`
+      <button type="button" class="btn btn-outline-primary">Try again</button>
+    `);
+    let alertHeaderText = '';
+    let alertColor = '';
+
+    switch (type) {
+      case 'win':
+        alertHeaderText = 'Congrats! You Won!';
+        alertColor = 'success';
+        $alertBlock.append($tryAgainBtn);
+        break;
+      case 'wrong':
+        alertHeaderText = 'Oops, wrong';
+        alertColor = 'danger';
+        break;
+      case 'loss':
+        alertHeaderText = 'Game over.';
+        alertColor = 'dark';
+        $alertBlock.append($tryAgainBtn);
+    }
+
+    $alertHeader.text(alertHeaderText);
+    $alertBlock.prepend($alertHeader);
+    if (additionalText) {
+      $alertHeader.after(`<p>${additionalText}</p>`);
+    }
+    $tryAgainBtn.click(() => location.reload());
+    $alertBlock.addClass(`alert-${alertColor}`);
+
+    $form.before($alertBlock);
   }
-  event.target.reset();
-}
+});
 
 function getRandomIntInclusive(min = 0, max = 100) {
   min = Math.ceil(min);
@@ -44,41 +88,10 @@ function getRandomIntInclusive(min = 0, max = 100) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function showAlert(type, additionalText = '') {
-  let alertHeaderText = '';
-  let alertType = '';
-  switch (type) {
-    case 'correct':
-      alertHeaderText = 'Congrats! You Won!';
-      alertType = 'success';
-      break;
-    case 'wrong':
-      alertHeaderText = 'Oops, wrong.';
-      alertType = 'danger';
-      break;
-    case 'lost':
-      alertHeaderText = 'Sorry, the game is over';
-      alertType = 'dark';
-  }
-
-  alertBlock.classList.add(`alert-${alertType}`);
-  alertBlock.innerHTML = `
-    <h4 class="alert-heading">${alertHeaderText}</h4>
+function getGameResultString(attemptsArr, randomNum) {
+  return `
+    Your attempts were: [${attemptsArr.join(', ')}].
+    <br>
+    The random number was ${randomNum}.
   `;
-  if (additionalText) {
-    alertBlock.innerHTML += `<p>${additionalText}</p>`;
-  }
-  display(alertBlock);
-}
-
-function display(element) {
-  element.style.display = 'block';
-}
-
-function hide(element) {
-  element.style.display = 'none';
-}
-
-function reload() {
-  location.reload();
 }
