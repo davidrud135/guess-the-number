@@ -1,4 +1,4 @@
-# guess-the-number
+# Game 'Guess the number'
 The most simple version of 'Guess the number' game.
 
 Game Rules:
